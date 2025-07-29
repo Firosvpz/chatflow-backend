@@ -23,7 +23,8 @@ setSocketServerInstance(io)
 // middleware
 app.use(
   cors({
-    origin: 'http://localhost:5173',
+    // origin: 'http://localhost:5173',
+    origin:'https://chatflow-frontend.vercel.app',
     credentials: true,
   }),
 );
