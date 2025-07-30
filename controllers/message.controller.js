@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Conversation from "../models/conversation.model.js"
 import Message from "../models/message.model.js"
 let io;
@@ -126,12 +127,79 @@ export const sendMessageWIthFile = async (req, res) => {
 
 export const deleteMessage = async (req, res) => {
     try {
-        const { recieverId } = req.params
-        const senderId = req.userId
-        const { message } = req.body
+        const { messageId } = req.params;
+        const userId = req.userId;
 
+        // Validate messageId format
+        if (!mongoose.Types.ObjectId.isValid(messageId)) {
+            return res.status(400).json({ error: "Invalid message ID format" });
+        }
+
+        const message = await Message.findOne({
+            _id: messageId,
+            $or: [
+                { senderId: userId },
+                { receiverId: userId }
+            ]
+        });
+
+        if (!message) {
+            return res.status(404).json({
+                error: "Message not found or unauthorized to delete"
+            });
+        }
+
+        const conversation = await Conversation.findOne({
+            messages: messageId
+        });
+
+
+
+        const deletedMessage = await Message.findByIdAndDelete(messageId);
+
+        if (!deletedMessage) {
+            return res.status(404).json({ error: "Message not found" });
+        }
+
+
+        if (conversation) {
+            conversation.messages.pull(messageId);
+
+        }
+
+        const deletionEvent = {
+            messageId,
+            conversationId: conversation?._id,
+            senderId: message.senderId,
+            deletedBy: userId,
+            timestamp: new Date()
+        };
+
+        console.log('deletionevent', deletionEvent);
+
+
+
+        const rooms = [
+            message.senderId.toString(),
+            message.recieverId.toString(),
+            conversation?._id.toString()
+        ].filter(Boolean);
+
+        console.log('Emitting deletion to rooms:', rooms);
+        io.to(rooms).emit('messageDeleted', deletionEvent);
+
+        return res.status(200).json({
+            success: true,
+            message: "Message deleted successfully",
+            deletedMessageId: messageId,
+            conversationId: conversation?._id
+        });
 
     } catch (error) {
-
+        console.error("Error deleting message:", error);
+        return res.status(500).json({
+            error: "Internal server error",
+            details: error.message
+        });
     }
-}
+};

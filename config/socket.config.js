@@ -5,7 +5,7 @@ export const initializeSocket = (server) => {
         cors: {
             // origin: 'http://localhost:5173',
             origin:'https://chatflow-frontend.vercel.app',
-            methods: ["GET", "POST"],
+            methods: ["GET", "POST", "DELETE"],
             credentials: true,
             allowedHeaders: ["Authorization"],
             transports: ['websocket', 'polling']
@@ -27,11 +27,17 @@ export const initializeSocket = (server) => {
         socket.on('join', (userId) => {
             console.log(`User ${userId} joined thier room`);
             socket.join(userId)
-             // Send immediate confirmation
-            socket.emit('joined', { success: true, userId });
+            // Send immediate confirmation
+            // socket.emit('joined', { success: true, userId });
         })
 
-       socket.on('disconnect', (reason) => {
+        socket.on('joinConversation', (conversationId) => {
+            socket.join(conversationId);
+            console.log(`Socket joined conversation room: ${conversationId}`);
+        });
+
+
+        socket.on('disconnect', (reason) => {
             console.log(`User disconnected: ${socket.id}, reason: ${reason}`);
         });
 
