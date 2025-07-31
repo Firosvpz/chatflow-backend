@@ -27,8 +27,6 @@ export const initializeSocket = (server) => {
         socket.on('join', (userId) => {
             console.log(`User ${userId} joined thier room`);
             socket.join(userId)
-            // Send immediate confirmation
-            // socket.emit('joined', { success: true, userId });
         })
 
         socket.on('joinConversation', (conversationId) => {
